@@ -16,7 +16,7 @@ int main() {
 
   while (1) {
     sep(); sep(); sep();
-    send("HELLO WORLD");
+    send("SELAMAT PAGI SIANG SORE DAN MALAM");
     _delay_ms(3000);
   }
 }
@@ -72,7 +72,7 @@ void send_char(char c) {
 
 void sep() {
     PORTD |= 1 << PD5;
-    _delay_ms(3000);
+    _delay_ms(1500);
     PORTD &= ~(1 << PD5);
     _delay_ms(1500);
 }
@@ -80,7 +80,7 @@ void sep() {
 void dot(uint8_t n) {
   for (; n > 0; n--) {
     PORTB |= 1 << PB5;
-    _delay_ms(1500);
+    _delay_ms(1250);
     PORTB &= ~(1 << PB5);
     _delay_ms(1500);
   }
