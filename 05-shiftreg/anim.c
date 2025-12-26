@@ -38,3 +38,59 @@ void bounce_left_right() {
     _delay_ms(200);
   }
 }
+
+void left_sign(int len) {
+  for (int i=0; i<8+len; i++) {
+    if (i<len) {
+      shift_bit(1);
+    } else {
+      shift_bit(0);
+    }
+    latch();
+    usleep(300 * 1000);
+  }
+}
+
+void loading_bar() {
+  uint8_t pattern = 0;
+  for (int i=0; i<=8; i++) {
+    draw_pattern(pattern, 500);
+    pattern |= (1 << i);
+  }
+}
+
+
+void random_spark() {
+  uint8_t pattern = 0;
+  for (int i=0; i<8; i++) {
+    pattern |= ((rand()%2 == 0) << (rand() % 8));
+  }
+  draw_pattern(pattern, 150);
+}
+
+void waterdrop() {
+  uint8_t pattern = 0b00011000;
+  uint8_t mask = pattern;
+
+  for (int i=0; i<4; i++) {
+    draw_pattern(pattern, 300);
+    pattern |= ((pattern << 1) | (pattern >> 1));
+    pattern &= (~mask);
+    mask |= pattern;
+  }
+}
+
+void heartbeat() {
+  uint8_t frames[] = {
+    0b00011000,
+    0b00111100,
+    0b01111110,
+    0b11111111,
+  };
+  for (int i=0; i<4; i++) {
+    draw_pattern(frames[i], 300);
+  }
+  for (int i=2; i>=0; i--) {
+    draw_pattern(frames[i], 300);
+  }
+}
