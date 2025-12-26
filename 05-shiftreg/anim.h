@@ -1,4 +1,5 @@
-void draw_pattern(uint8_t, int);
+bool draw_pattern(uint8_t, int);
+void hello_world();
 void binary_counter();
 void bounce_left_right();
 void left_sign(int);

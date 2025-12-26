@@ -1,13 +1,14 @@
 #include <anim.h>
 
-void draw_pattern(uint8_t pattern, int delay_ms) {
-  sr_write(pattern);
+bool draw_pattern(uint8_t pattern, int delay_ms) {
+  if (!sr_write(pattern)) return false;
   _delay_ms(delay_ms);
+  return true
 }
 
 void binary_counter() {
   for (int i=0; i<256; i++) {
-    draw_pattern(i, 150); 
+    if (!draw_pattern(i, 150)) return;
   }
 }
 
@@ -17,7 +18,7 @@ void stack_to_end() {
   for (int i=7; i>=0; i--) {
     for (int j=0; j<i; j++) {
       pattern = (1 << j);
-      draw_pattern((pattern | carry), 150);
+      if (!draw_pattern((pattern | carry), 150)) return;
     }
     carry |= pattern;
   }
@@ -30,12 +31,13 @@ void bounce_left_right() {
     } else {
       shift_bit(0);
     }
-    latch();
+    if (!latch()) {
+      return;
+    }
     _delay_ms(200);
   }
   for (int i=7; i>=0; i--) { 
-    sr_write((1 << i));
-    _delay_ms(200);
+    if (!draw_pattern((1<<i), 200)) return;
   }
 }
 
@@ -46,7 +48,9 @@ void left_sign(int len) {
     } else {
       shift_bit(0);
     }
-    latch();
+    if (!latch()) {
+      return;
+    }
     usleep(300 * 1000);
   }
 }
@@ -54,7 +58,7 @@ void left_sign(int len) {
 void loading_bar() {
   uint8_t pattern = 0;
   for (int i=0; i<=8; i++) {
-    draw_pattern(pattern, 500);
+    if (!draw_pattern(pattern, 500)) return;
     pattern |= (1 << i);
   }
 }
@@ -65,7 +69,7 @@ void random_spark() {
   for (int i=0; i<8; i++) {
     pattern |= ((rand()%2 == 0) << (rand() % 8));
   }
-  draw_pattern(pattern, 150);
+  if (!draw_pattern(pattern, 150)) return;
 }
 
 void waterdrop() {
@@ -73,7 +77,7 @@ void waterdrop() {
   uint8_t mask = pattern;
 
   for (int i=0; i<4; i++) {
-    draw_pattern(pattern, 300);
+    if (!draw_pattern(pattern, 300)) return;
     pattern |= ((pattern << 1) | (pattern >> 1));
     pattern &= (~mask);
     mask |= pattern;
@@ -88,9 +92,19 @@ void heartbeat() {
     0b11111111,
   };
   for (int i=0; i<4; i++) {
-    draw_pattern(frames[i], 300);
+    if (!draw_pattern(frames[i], 300)) return;
   }
   for (int i=2; i>=0; i--) {
-    draw_pattern(frames[i], 300);
+    if (!draw_pattern(frames[i], 300)) return;
+  }
+}
+
+void hello_world() {
+  char msg[] = "HELLO WORLD";
+  size_t msg_len = sizeof(msg) - 1; // exclude '\0'
+
+  for (size_t i=0; i<msg_len; i++) {
+    if (!sr_write(msg[i])) return;
+    _delay_ms(500);
   }
 }
