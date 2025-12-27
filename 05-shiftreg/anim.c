@@ -1,9 +1,18 @@
+#include <util/delay.h>
 #include <anim.h>
+#include <stdlib.h>
+#include <stdint.h>
+
+extern bool latch();
+extern bool sr_write(uint8_t pattern);
+extern void shift_bit(bool bit);
 
 bool draw_pattern(uint8_t pattern, int delay_ms) {
   if (!sr_write(pattern)) return false;
-  _delay_ms(delay_ms);
-  return true
+  for (int i = 0; i < delay_ms; i++) {
+    _delay_ms(1);
+  }
+  return true;
 }
 
 void binary_counter() {
@@ -25,19 +34,11 @@ void stack_to_end() {
 }
 
 void bounce_left_right() {
-  for (int i=1; i<7; i++) {
-    if (i==1) {
-      shift_bit(1);
-    } else {
-      shift_bit(0);
-    }
-    if (!latch()) {
-      return;
-    }
-    _delay_ms(200);
+  for (int i=0; i<8; i++) {
+    if (!draw_pattern((1 << i), 100)) return;
   }
   for (int i=7; i>=0; i--) { 
-    if (!draw_pattern((1<<i), 200)) return;
+    if (!draw_pattern((1<<i), 100)) return;
   }
 }
 
@@ -51,14 +52,14 @@ void left_sign(int len) {
     if (!latch()) {
       return;
     }
-    usleep(300 * 1000);
+    _delay_ms(300);
   }
 }
 
 void loading_bar() {
   uint8_t pattern = 0;
   for (int i=0; i<=8; i++) {
-    if (!draw_pattern(pattern, 500)) return;
+    if (!draw_pattern(pattern, 200)) return;
     pattern |= (1 << i);
   }
 }
@@ -69,7 +70,7 @@ void random_spark() {
   for (int i=0; i<8; i++) {
     pattern |= ((rand()%2 == 0) << (rand() % 8));
   }
-  if (!draw_pattern(pattern, 150)) return;
+  if (!draw_pattern(pattern, 100)) return;
 }
 
 void waterdrop() {
@@ -77,7 +78,7 @@ void waterdrop() {
   uint8_t mask = pattern;
 
   for (int i=0; i<4; i++) {
-    if (!draw_pattern(pattern, 300)) return;
+    if (!draw_pattern(pattern, 200)) return;
     pattern |= ((pattern << 1) | (pattern >> 1));
     pattern &= (~mask);
     mask |= pattern;
@@ -92,10 +93,10 @@ void heartbeat() {
     0b11111111,
   };
   for (int i=0; i<4; i++) {
-    if (!draw_pattern(frames[i], 300)) return;
+    if (!draw_pattern(frames[i], 250)) return;
   }
   for (int i=2; i>=0; i--) {
-    if (!draw_pattern(frames[i], 300)) return;
+    if (!draw_pattern(frames[i], 250)) return;
   }
 }
 

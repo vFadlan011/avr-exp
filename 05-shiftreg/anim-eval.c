@@ -60,13 +60,8 @@ void stack_to_end() {
 }
 
 void bounce_left_right() {
-  for (int i=1; i<7; i++) {
-    if (i==1) {
-      shift_bit(1);
-    } else {
-      shift_bit(0);
-    }
-    latch();
+  for (int i=0; i<8; i++) {
+    sr_write((1 << i));
     usleep(150 * 1000);
   }
   for (int i=7; i>=0; i--) { 
