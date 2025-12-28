@@ -117,7 +117,7 @@ ISR (PCINT2_vect) {
     if (mode) {
       mode--;
     } else {
-      mode = ANIM_NUM;
+      mode = ANIM_NUM-1;
     }
 
   } else if ((~(PIND >> PD6)) & 1) {
