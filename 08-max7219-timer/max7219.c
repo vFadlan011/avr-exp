@@ -12,12 +12,14 @@
 
 const uint8_t EMOJI_NUM = 6;
 const uint64_t IMAGES[] = {
-  0x00183C7EFFFF6600, // 0 heart emoji
-  0x3C4299A581A5423C, // 1 smile emoji
-  0x3C42A59981A5423C, // 2 sad face emoji
-  0x3C4281BD81A5423C, // 3 flat face emoji
-  0x040A112040800000, // 4 v
-  0x8142241818244281, // 5 x
+  0x0800080810202418, // 0 ?
+  0x8142241818244281, // 1 x
+  0x1818001818181818, // 2 !
+  0x040A112040800000, // 3 v
+  0x00183C7EFFFF6600, // 4 heart emoji
+  0x3C4299A581A5423C, // 5 smile emoji
+  0x3C42A59981A5423C, // 6 sad face emoji
+  0x3C4281BD81A5423C, // 7 flat face emoji
   0x3c3c1818181e1c18,
   0x7e7e1c3060667e3c,
   0x3c7c603878607c3c,
@@ -81,16 +83,16 @@ const uint64_t IMAGES[] = {
   0x4428102844000000,
   0x1824203824242400,
   0x3c0418203c000000,
-  0x1818001818181818,
-  0x0800080810202418,
 };
 const uint8_t IMAGES_LEN = sizeof(IMAGES)/8;
 
+uint8_t device_num = 0;
+
 void SPI_init(int sck, int mosi, int load) {
+  PORTB |= (1 << load);
   DDRB |= (1 << sck) | (1 << mosi) | (1 << load);
   SPCR = (1 << SPE) | (1 << MSTR);
   SPSR |= 1; // prescale 2
-  PORTB |= (1 << load);
 }
 
 void SPI_transmit(uint8_t data) {
@@ -98,11 +100,16 @@ void SPI_transmit(uint8_t data) {
   while (!(SPSR & (1 << SPIF)));
 }
 
-void send_instruction(uint16_t instruction, uint8_t load_pin, uint8_t id) {
+void send_instruction(uint16_t instruction, uint8_t load_pin, uint8_t target_id) {
+  for (int i=0; i<(device_num - 1 - target_id); i++) {
+    SPI_transmit(0x00);
+    SPI_transmit(0x00);
+  }
+
   SPI_transmit(instruction >> 8); // address
   SPI_transmit(instruction & 0xFF); // data
 
-  for (int i=0; i<id; i++) {
+  for (int i=0; i<target_id; i++) {
     SPI_transmit(0x00);
     SPI_transmit(0x00);
   }
@@ -111,11 +118,14 @@ void send_instruction(uint16_t instruction, uint8_t load_pin, uint8_t id) {
   PORTB |= (1 << load_pin);
 }
 
-void display_init(uint8_t decode_mode, uint8_t scan_limit, uint8_t intensity, uint8_t load_pin, uint8_t id) {
-  send_instruction(((MAX_SHUTDOWN << 8) | 1), load_pin, id);
+void display_init(uint8_t decode_mode, uint8_t scan_limit, uint8_t intensity, uint8_t load_pin, uint8_t id, uint8_t total_display) {
+  device_num = total_display;
+  send_instruction((MAX_TEST << 8), load_pin, id);
+  send_instruction((MAX_SHUTDOWN << 8), load_pin, id);
   send_instruction(((MAX_MODE << 8) | decode_mode), load_pin, id);
   send_instruction(((MAX_SCAN<< 8) | (scan_limit & 0x7)), load_pin, id);
   send_instruction(((MAX_INTENSITY<< 8) | (intensity & 0xF)), load_pin, id);
+  send_instruction(((MAX_SHUTDOWN << 8) | 1), load_pin, id);
 }
 
 void display_codeB(uint8_t digit, uint8_t code, uint8_t load_pin, uint8_t id) {
