@@ -10,9 +10,9 @@
 #define SCK PB5
 #define MOSI PB3
 #define LOAD PB2
+#define BUTTON_COUNT 3
 
 volatile uint32_t centiseconds = 0;
-
 volatile bool count = true;
 volatile bool update_display = true;
 volatile int c = 0;
@@ -21,23 +21,39 @@ extern uint8_t EMOJI_NUM;
 extern uint64_t IMAGES[];
 extern uint8_t IMAGES_LEN;
 
-volatile uint32_t pcint2_last_debounce = 0;
-volatile bool pcint2_delayed = false;
-volatile uint32_t int0_last_debounce = 0;
-volatile bool int0_delayed = false;
+struct button_t {
+  uint8_t *inputreg;
+  uint8_t pin_no;
+  bool last_state;
+  uint8_t delay;
+  bool event;
+};
+
+volatile struct button_t hold; // PD2
+volatile struct button_t next; // PD6
+volatile struct button_t prev; // PD7
+
+volatile struct button_t *buttons[BUTTON_COUNT] = {
+  &hold,
+  &next,
+  &prev
+};
+
+struct button_t init_button(uint8_t *inputreg, char pin_no);
 
 int main() {
   uint8_t cs, h, m, s;
-  uint32_t remaining_seconds, now;
+  uint32_t remaining_seconds;
+
   TCCR1B = (1 << 3) | 0b010; // ctc mode prescale 8, 2MHz
   OCR1A = 19999; // 10ms each match
   TIMSK1 = (1 << OCIE1A); // Timer Interrupt 1 Mask
-  PORTD = (1 << PD4) | (1 << PD6) | (1 << PD7);
-  EICRA = (1 << ISC00);
-  EIMSK = 1;
-  PCICR |= (1 << PCIE2);
-  PCMSK2 |= (1 << PCINT22) | (1 << PCINT23);
 
+  hold = init_button(&PIND, PD2);
+  next = init_button(&PIND, PD6);
+  prev = init_button(&PIND, PD7);
+
+  PORTD = (1 << hold.pin_no) | (1 << next.pin_no) | (1 << prev.pin_no);
 
   SPI_init(SCK, MOSI, LOAD);
   display_init(0xFF, 0x07, 7, LOAD, 0, 2);
@@ -73,48 +89,36 @@ int main() {
       update_display = false;
     }
 
-    now = centiseconds;
-    if (int0_delayed) {
-      int0_delayed = false;
-      if ((!(PIND >> PD4)) & 1) {
-        count = false;
-      } else if ((PIND >> PD4) & 1) {
+    if (hold.event) {
+      if ((*(hold.inputreg) >> hold.pin_no) & 1) {
         count = true;
+      } else {
+        count = false;
       }
+      hold.event = false;
     }
-    if (pcint2_delayed) {
-      pcint2_delayed = false;
-      if ((!(PIND >> PD7)) & 1) {
-        if (c) {
-          c--;
-        } else {
-          c = IMAGES_LEN-1;
-        }
 
-      } else if ((!(PIND >> PD6)) & 1) {
+    if (next.event) {
+      if (!((*(next.inputreg) >> next.pin_no) & 1)) {
         if (c==(IMAGES_LEN-1)) {
           c = 0;
         } else {
           c++;
         }
       }
+      next.event = false;
     }
-  }
-}
 
-ISR (INT0_vect) {
-  uint32_t now = centiseconds;
-  if ((now - int0_last_debounce) >= DEBOUNCE_DELAY) {
-    int0_last_debounce = now;
-    int0_delayed = true;
-  }
-}
-
-ISR (PCINT2_vect) {
-  uint32_t now = centiseconds;
-  if ((now - pcint2_last_debounce) >= DEBOUNCE_DELAY) {
-    pcint2_last_debounce = now;
-    pcint2_delayed = true;
+    if (prev.event) {
+      if (!((*(prev.inputreg) >> prev.pin_no) & 1)) {
+        if (c) {
+          c--;
+        } else {
+          c = IMAGES_LEN-1;
+        }
+      }
+      prev.event = false;
+    }
   }
 }
 
@@ -123,10 +127,28 @@ ISR (TIMER1_COMPA_vect) {
     centiseconds++;
     update_display = true;
   }
+
+  for (int i=0; i<BUTTON_COUNT; i++) {
+    bool current_state = (*(buttons[i]->inputreg) >> buttons[i]->pin_no) & 1;
+
+    if (current_state != buttons[i]->last_state) {
+      if (buttons[i]->delay>=DEBOUNCE_DELAY) {
+        buttons[i]->event = true;
+        buttons[i]->last_state = current_state;
+        buttons[i]->delay = 0;
+      }
+      update_display = true;
+      buttons[i]->delay++;
+    }
+  }
 }
 
-/*
-todo:
-off-load int isr: only set event flag and debounce
-off-load pcint isr: only set event flag and debounce
-*/
+struct button_t init_button(uint8_t *inputreg, char pin_no) {
+  struct button_t temp;
+  temp.inputreg = inputreg;
+  temp.pin_no = pin_no;
+  temp.last_state = ((*inputreg) >> pin_no) & 1;
+  temp.delay = 0;
+  temp.event = false;
+  return temp;
+}
