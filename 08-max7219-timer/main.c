@@ -15,7 +15,7 @@
 volatile uint32_t centiseconds = 0;
 volatile bool count = true;
 volatile bool update_display = true;
-volatile int c = 0;
+volatile uint8_t c = 0;
 
 extern uint64_t IMAGES[];
 extern uint8_t IMAGES_LEN;
@@ -135,9 +135,12 @@ ISR (TIMER1_COMPA_vect) {
         buttons[i]->event = true;
         buttons[i]->last_state = current_state;
         buttons[i]->delay = 0;
+      } else {
+        buttons[i]->delay++;
       }
       update_display = true;
-      buttons[i]->delay++;
+    } else {
+      buttons[i]->delay = 0;
     }
   }
 }
