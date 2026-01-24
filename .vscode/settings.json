@@ -1,3 +1,4 @@
 {
-  "C_Cpp.errorSquiggles": "disabled"
+  "C_Cpp.errorSquiggles": "disabled",
+  "cmake.sourceDirectory": "/home/fadlana/Documents/dev/learn/avr-exp/09-i2c-uart/stm32/uart-bridge"
 }
