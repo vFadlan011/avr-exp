@@ -9,7 +9,7 @@
 
 volatile bool transmit = true;
 
-void ts_get(float *ts);
+void its_get(float *its);
 
 void uart_transmit(unsigned char c);
 void uart_print(char *c);
@@ -26,8 +26,7 @@ int main()
   ADMUX = (1 << REFS1) | (1 << REFS0) | (1 << MUX3); // Use internal 1.1v reference | select temp sensor channel
   ADCSRA |= (1 << ADEN) | (1 << ADATE); // Enable ADC | auto trigger ADC
   ADCSRB |= 0b101; // Trigger on counter1 match b
-  
-  float ts;
+  float its;
 
   /* Configure UART
   8-bit word (default)
@@ -40,10 +39,19 @@ int main()
   UBRR0 = 3; // 250.000 bps
   sei();
 
+  /* Configure I2C (AHT10 Sensor) */
+  float aht_temp = 27.3;
+  float aht_hum = 50.5;
+
+  char s[50];
+
   while (1) {
     if (transmit) {
-      ts_get(&ts);
+      ts_get(&its);
 
+      /* TODO: transmit uart: "%.3f\t%.3f\t%.3f", aht_temp, its, aht_hum */
+      snprintf(s, sizeof(s), "%.3f\t%.3f\t%.3f", aht_temp, its, aht_hum);
+      
       transmit = false;
     }
   }
@@ -54,13 +62,13 @@ ISR (TIMER1_COMPA_vect)
   transmit = true;
 }
 
-void ts_get(float *ts)
+void its_get(float *its)
 {
   while (!(ADCSRA & (1 << ADIF)));
   uint16_t ts_raw = ADCL | (ADCH << 8);
   ADCSRA |= (1 << ADIF);
 
-  *t = (ts_raw - 324.31) / 1.22;
+  *its = (ts_raw - 324.31) / 1.22;
 }
 
 void uart_transmit(unsigned char c)
