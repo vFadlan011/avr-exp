@@ -23,6 +23,7 @@
 /* Private includes ----------------------------------------------------------*/
 /* USER CODE BEGIN Includes */
 #include "uart_bridge.h"
+#include <stdio.h>
 /* USER CODE END Includes */
 
 /* Private typedef -----------------------------------------------------------*/
@@ -159,8 +160,7 @@ void USART1_IRQHandler(void)
       rx_buf[rx_idx] = '\0';
       rx_idx = 0;
 
-      sscanf((char*)rx_buf, "%f\t%f", &aht_temp, &aht_hum);
-      HAL_GPIO_TogglePin(LED_GREEN_GPIO_Port, LED_GREEN_Pin);
+      message_received = true;
     }
     else if (rx_idx < RX_BUF_SIZE - 1)
     {

@@ -22,6 +22,7 @@
 /* Private includes ----------------------------------------------------------*/
 /* USER CODE BEGIN Includes */
 #include "uart_bridge.h"
+#include <stdio.h>
 /* USER CODE END Includes */
 
 /* Private typedef -----------------------------------------------------------*/
@@ -51,7 +52,8 @@ UART_HandleTypeDef huart2;
 volatile char rx_buf[RX_BUF_SIZE];
 volatile uint8_t rx_idx;
 
-float aht_temp, aht_hum;
+volatile float aht_temp, aht_hum;
+volatile bool message_received = false;
 /* USER CODE END PV */
 
 /* Private function prototypes -----------------------------------------------*/
@@ -109,8 +111,20 @@ int main(void)
 
   /* Infinite loop */
   /* USER CODE BEGIN WHILE */
+  uint8_t count;
   while (1)
   {
+    if (message_received) {
+      count = sscanf((char*)rx_buf, "%f\t%f", &aht_temp, &aht_hum);
+
+      if (count == 2) {
+        HAL_GPIO_TogglePin(LED_GREEN_GPIO_Port, LED_GREEN_Pin);
+        HAL_Delay(50);
+        HAL_GPIO_TogglePin(LED_GREEN_GPIO_Port, LED_GREEN_Pin);
+      } else {
+      }
+      message_received = false;
+    }
     /* USER CODE END WHILE */
 
     /* USER CODE BEGIN 3 */
