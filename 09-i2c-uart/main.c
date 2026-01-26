@@ -13,6 +13,8 @@ volatile bool transmit = true;
 void uart_transmit(unsigned char c);
 void uart_print(char *c);
 
+void aht_init(void);
+void aht_measure(float *temp, float *hum);
 
 int main() 
 {
@@ -34,8 +36,9 @@ int main()
   sei();
 
   /* Configure I2C (AHT10 Sensor) */
-  float aht_temp = 27.3;
-  float aht_hum = 50.5;
+  TWCR |= (1 << TWEA) | (1 << TWEN); // Enable acknowledge bit | Enable TWI
+  TWAR = 0x38 // AHT10 address
+  float aht_temp, aht_hum;
 
   char s[50];
 

@@ -48,12 +48,17 @@ UART_HandleTypeDef huart2;
 
 /* USER CODE BEGIN PV */
 #define RX_BUF_SIZE 64
+#define TS_CAL1 *((volatile uint16_t *)0x1FFF75A8)
+#define TS_CAL2 *((volatile uint16_t *)0x1FFF75CA)
+#define VDD_CAL 3300.0
+#define VDD_APP 3000.0
 
 volatile char rx_buf[RX_BUF_SIZE];
 volatile uint8_t rx_idx;
 
 volatile float aht_temp, aht_hum;
 volatile bool message_received = false;
+volatile float itemp;
 /* USER CODE END PV */
 
 /* Private function prototypes -----------------------------------------------*/
@@ -66,6 +71,7 @@ static void MX_USART2_UART_Init(void);
 
 void uart_transmit(unsigned char c);
 void uart_print(char *c);
+void get_temp(float *temp);
 /* USER CODE END PFP */
 
 /* Private user code ---------------------------------------------------------*/
@@ -115,6 +121,7 @@ int main(void)
   while (1)
   {
     if (message_received) {
+      get_temp(&itemp);
       count = sscanf((char*)rx_buf, "%f\t%f", &aht_temp, &aht_hum);
 
       if (count == 2) {
@@ -232,7 +239,9 @@ static void MX_ADC1_Init(void)
     Error_Handler();
   }
   /* USER CODE BEGIN ADC1_Init 2 */
-
+  ADC1->CR |= ADC_CR_ADEN;
+  ADC->CCR |= ADC_CCR_TSEN;
+  ADC1->SMPR |=  ADC_SMPR_SMP2;
   /* USER CODE END ADC1_Init 2 */
 
 }
@@ -390,6 +399,16 @@ void uart_print(char *c) {
   }
 }
 
+void get_temp(float *temp) {
+  ADC1->CR |= ADC_CR_ADSTART;
+  while (!(ADC1->ISR & ADC_ISR_EOC));
+    ;
+  uint16_t raw = ADC1->DR;
+  raw = (uint16_t)(raw * (VDD_APP / VDD_CAL));
+
+  float cal_diff = TS_CAL2 - TS_CAL1;
+  *temp = ((100 * (raw - TS_CAL1)) / cal_diff) + 30;
+}
 /* USER CODE END 4 */
 
 /**
